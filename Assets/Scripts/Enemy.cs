@@ -5,8 +5,14 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     // Start is called before the first frame update
-    void OnCollisionEnter2D(Collision2D collision)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-      Debug.Log("Ouch!");
-    }
+        if (other.CompareTag("Bullet"))
+        {
+            // Handle bullet collision with enemy
+            Destroy(other.gameObject); // Destroy the bullet
+            Destroy(gameObject); // Destroy the enemy
+			Debug.Log("Ouch!");
+        }
+	}
 }
