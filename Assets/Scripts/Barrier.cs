@@ -5,13 +5,13 @@ public class Barrier : MonoBehaviour
     public int maxHealth = 5;
     private int health;
 
-    public Color[] healthColors; // Array to store different colors for each health value
-    private SpriteRenderer spriteRenderer;
+    public Material[] healthColors; // Array to store different colors for each health value
+    private Renderer meshRenderer;
 
     private void Start()
     {
         health = maxHealth;
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        meshRenderer = GetComponent<Renderer>();
         UpdateBarrierColor();
     }
 
@@ -44,6 +44,6 @@ public class Barrier : MonoBehaviour
         int clampedHealth = Mathf.Clamp(health, 1, healthColors.Length);
 
         // Set the color based on health
-        spriteRenderer.color = healthColors[clampedHealth - 1];
+        meshRenderer.material = healthColors[clampedHealth - 1];
     }
 }

@@ -6,6 +6,7 @@ public class Bullet : MonoBehaviour
     public float speed = 10f;
 
     private Rigidbody2D rb;
+    private bool isEnemyBullet = false; // Flag to indicate whether the bullet is fired by an enemy
 
     void Start()
     {
@@ -13,9 +14,16 @@ public class Bullet : MonoBehaviour
         Fire();
     }
 
+    // Method to set the bullet as an enemy bullet
+    public void SetEnemyBullet()
+    {
+        isEnemyBullet = true;
+    }
+
     void Fire()
     {
-        rb.velocity = Vector2.up * speed;
+        // Set the velocity based on the direction
+        rb.velocity = (isEnemyBullet ? Vector2.down : Vector2.up) * speed;
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -26,7 +34,7 @@ public class Bullet : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
+
     void OnTriggerExit2D(Collider2D other)
     {
         // Destroy the bullet if it exits the vertical dimension of the canvas

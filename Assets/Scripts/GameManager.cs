@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
 
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI highScoreText;
-
+    
     private int score;
     private int highScore;
 
