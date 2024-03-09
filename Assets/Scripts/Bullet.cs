@@ -6,7 +6,7 @@ public class Bullet : MonoBehaviour
     public float speed = 10f;
 
     private Rigidbody2D rb;
-    private bool isEnemyBullet = false; // Flag to indicate whether the bullet is fired by an enemy
+    public bool isEnemyBullet = false; // Flag to indicate whether the bullet is fired by an enemy
 
     void Start()
     {
@@ -28,8 +28,8 @@ public class Bullet : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // Destroy the bullet upon collision with a barrier or an enemy
-        if (other.CompareTag("Barrier") || other.CompareTag("Enemy"))
+        // Destroy the bullet upon collision with a game object
+        if (other.CompareTag("Barrier") || (isEnemyBullet && other.CompareTag("Player")) || other.CompareTag("Enemy"))
         {
             Destroy(gameObject);
         }
