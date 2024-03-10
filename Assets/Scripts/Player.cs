@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         MovePlayer();
-        FireBullet();
+        ShootBullet();
     }
 
     void MovePlayer()
@@ -21,12 +21,14 @@ public class Player : MonoBehaviour
         float horizontalInput = Input.GetAxis("Horizontal");
         transform.Translate(Vector2.right * horizontalInput * movementSpeed * Time.deltaTime);
     }
-
-    void FireBullet()
+	
+    void ShootBullet()
     {
         if (Input.GetKeyDown(KeyCode.Space) && canFire)
         {
-            GameObject bullet = Instantiate(bulletPrefab, transform.position, Quaternion.identity);
+            Vector3 bulletPosition = transform.position;
+        	bulletPosition.y += 1f; // Position the bullet above the player.
+        	GameObject bullet = Instantiate(bulletPrefab, bulletPosition, Quaternion.identity);
 
             // Set canFire to false, preventing the player from firing until this bullet is destroyed
             canFire = false;
@@ -45,7 +47,7 @@ public class Player : MonoBehaviour
         canFire = true;
     }
 
-	private void DestroyPlayer()
+	public void DestroyPlayer()
     {
         lives--;
 
@@ -61,15 +63,21 @@ public class Player : MonoBehaviour
         }
     }
 	
-    private void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerEnter2D(Collider2D other)
+{
+    Bullet bullet = other.GetComponent<Bullet>();
+    if (bullet != null)
     {
-        if (other.CompareTag("Bullet"))
+        if (bullet.isEnemyBullet)
         {
-            // Destroy the bullet
-            //Destroy(other.gameObject);
-
-            // Handle player destruction
-            //DestroyPlayer();
+            // Handle collision with enemy bullets (destroy player, reduce health, or other logic).
+            Destroy(gameObject); // Example: destroy the player.
         }
+
+        // Always destroy the bullet on collision.
+        Destroy(other.gameObject);
+		DestroyPlayer();
     }
+}
+
 }
