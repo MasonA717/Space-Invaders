@@ -1,15 +1,34 @@
 ﻿using System.Collections;
-using System.Linq;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
     public float moveSpeed = 1.0f;
     public GameObject bulletPrefab;
+    public GameManager gameManager; // Reference to the GameManager script
+    public AudioSource enemyAudioSource;
+    public AudioClip enemyShotSound, enemyDeathSound;
 
-    private int remainingEnemies;
-    private bool canFire = true;
+    public int remainingEnemies;
+    private bool canFire = true, isDeathSoundPlaying = false;
+    
+    private void Awake()
+    {
+        // Try to find an existing AudioSource component
+        enemyAudioSource = GetComponent<AudioSource>();
 
+        // If AudioSource component doesn't exist, create and configure it
+        if (enemyAudioSource == null)
+        {
+            enemyAudioSource = gameObject.AddComponent<AudioSource>();
+            enemyAudioSource.playOnAwake = false;
+        }
+
+        // Load audio clips
+        enemyShotSound = Resources.Load<AudioClip>("Enemy Shot");
+        enemyDeathSound = Resources.Load<AudioClip>("Enemy Death");
+    }
+    
     void Start()
     {
         remainingEnemies = GetTotalEnemyCount();
@@ -18,7 +37,11 @@ public class Enemy : MonoBehaviour
     
     void Update()
     {
-        MoveTowardsPlayer();
+        // Check if the death sound effect is playing
+        if (!isDeathSoundPlaying)
+        {
+            MoveTowardsPlayer();
+        }
     }
     
     void MoveTowardsPlayer()
@@ -62,6 +85,9 @@ public class Enemy : MonoBehaviour
         GameObject bullet = Instantiate(bulletPrefab, bulletPosition, Quaternion.identity);
         bullet.GetComponent<Bullet>().SetEnemyBullet(); // Set the bullet as an enemy bullet.
         StartCoroutine(DelayedBulletReset(bullet));
+        
+        enemyAudioSource.clip = enemyShotSound;
+        enemyAudioSource.Play();
     }
 
     IEnumerator DelayedBulletReset(GameObject bullet)
@@ -86,11 +112,16 @@ public class Enemy : MonoBehaviour
             // Check if the bullet is not fired by an enemy
             if (!bullet.isEnemyBullet)
             {
-                // Handle player bullet collision with enemies.
-                Destroy(other.gameObject); // Destroy the bullet.
-                Destroy(gameObject); // Destroy the enemy.
-                remainingEnemies--;
-
+                // Play the death sound effect
+                enemyAudioSource.clip = enemyDeathSound;
+                enemyAudioSource.Play();
+                
+                isDeathSoundPlaying = true; // Set the flag to indicate that the death sound effect is playing
+                StartCoroutine(WaitForDeathSound()); // Wait for the death sound effect to finish playing
+                
+                gameManager.IncrementScore(); // Increment the score based on the score multiplier
+                gameManager.UpdateScoreMultiplier(1); // Increase the score multiplier
+                
                 // Adjust enemy speed based on remaining enemies.
                 if (remainingEnemies <= GetTotalEnemyCount())
                 {
@@ -100,18 +131,26 @@ public class Enemy : MonoBehaviour
                     {
                         enemy.moveSpeed *= speedAdjustment;
                     }
+                } else if (remainingEnemies == 0)
+                {
+                    GameManager.Instance.EndGame(true); // Game victory logic
                 }
             }
         }
         else if (other.CompareTag("Barrier"))
         {
-            // Handle player bullet collision with barricades.
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Player"))
         {
-            // Handle collision with the player (enemy bullet hitting the player).
             Destroy(other.gameObject);
         }
+    }
+    
+    IEnumerator WaitForDeathSound()
+    {
+        yield return new WaitForSeconds(enemyDeathSound.length); // Wait for the duration of the death sound effect
+        Destroy(gameObject); // Destroy the enemy GameObject
+        isDeathSoundPlaying = false; // Reset the flag after the death sound effect finishes playing
     }
 }

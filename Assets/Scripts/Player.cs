@@ -4,16 +4,38 @@ using System.Collections;
 public class Player : MonoBehaviour
 {
     public GameObject bulletPrefab;
-    private int lives;
-	public int initialLives = 3;    
+    public AudioSource playerAudioSource;
+    public AudioClip playerShotSound, playerDeathSound;
+    private int lives = 3;   
     public float movementSpeed = 5f;
-	private bool canFire = true;
+	private bool canFire = true, isDeathSoundPlaying = false;
+    
+    private void Awake()
+    {
+        // Try to find an existing AudioSource component
+        playerAudioSource = GetComponent<AudioSource>();
 
+        // If AudioSource component doesn't exist, create and configure it
+        if (playerAudioSource == null)
+        {
+            playerAudioSource = gameObject.AddComponent<AudioSource>();
+            playerAudioSource.playOnAwake = false;
+        }
+
+        // Load audio clips
+        playerShotSound = Resources.Load<AudioClip>("Player Shot");
+        playerDeathSound = Resources.Load<AudioClip>("Player Death");
+    }
+    
     // Update is called once per frame
     void Update()
     {
-        MovePlayer();
-        ShootBullet();
+        // Check if the death sound effect is playing
+        if (!isDeathSoundPlaying)
+        {
+            MovePlayer();
+            ShootBullet();
+        }
     }
 
     void MovePlayer()
@@ -29,6 +51,9 @@ public class Player : MonoBehaviour
             Vector3 bulletPosition = transform.position;
         	bulletPosition.y += 1f; // Position the bullet above the player.
         	GameObject bullet = Instantiate(bulletPrefab, bulletPosition, Quaternion.identity);
+            
+            playerAudioSource.clip = playerShotSound;
+            playerAudioSource.Play();
 
             // Set canFire to false, preventing the player from firing until this bullet is destroyed
             canFire = false;
@@ -46,38 +71,42 @@ public class Player : MonoBehaviour
         // Set canFire back to true, allowing the player to fire again
         canFire = true;
     }
-
-	public void DestroyPlayer()
-    {
-        lives--;
-
-        if (lives <= 0)
-        {
-            // Game over logic
-            GameManager.Instance.EndGame();
-        }
-        else
-        {
-            // Reset player position or other respawn logic
-            // Example: transform.position = startPosition;
-        }
-    }
 	
     void OnTriggerEnter2D(Collider2D other)
-{
-    Bullet bullet = other.GetComponent<Bullet>();
-    if (bullet != null)
     {
-        if (bullet.isEnemyBullet)
+        Bullet bullet = other.GetComponent<Bullet>();
+        if (bullet != null)
         {
-            // Handle collision with enemy bullets (destroy player, reduce health, or other logic).
-            Destroy(gameObject); // Example: destroy the player.
+            if (bullet.isEnemyBullet)
+            {
+                // Handle collision with enemy bullets
+                DestroyPlayer();
+            }
         }
-
-        // Always destroy the bullet on collision.
-        Destroy(other.gameObject);
-		DestroyPlayer();
     }
-}
-
+    
+    public void DestroyPlayer()
+    {
+        lives--;
+        
+        // Play the death sound effect
+        playerAudioSource.clip = playerDeathSound;
+        playerAudioSource.Play();
+        
+        isDeathSoundPlaying = true; // Set the flag to indicate that the death sound effect is playing
+        StartCoroutine(WaitForDeathSound()); // Wait for the death sound effect to finish playing
+        
+        if (lives <= 0)
+        {
+            GameManager.Instance.EndGame(false); // Game over logic
+        }
+    }
+    
+    IEnumerator WaitForDeathSound()
+    {
+        yield return new WaitForSeconds(playerDeathSound.length); // Wait for the duration of the death sound effect
+        GameManager.Instance.ResetScene(); // Reset the scene as long as the player has lives remaining
+        Destroy(gameObject); // Destroy the enemy GameObject
+        isDeathSoundPlaying = false; // Reset the flag after the death sound effect finishes playing
+    }
 }
